@@ -66,8 +66,13 @@ app.get("/", (req, res) => {
 
 app.get("/studios", async (req, res) => {
   try {
-    const result = await studiosCollection.find().toArray();
-    res.status(200).send(result);
+    const { email } = req.query;
+    let query = {};
+    if (email) {
+      query = { userEmail: email };
+    }
+    const result = await studiosCollection.find(query).toArray();
+    res.send(result);
   } catch (error) {
     res.status(500).send({ message: "Failed to fetch studios" });
   }
@@ -300,7 +305,7 @@ app.get("/seed-studios", async (req, res) => {
       },
     ];
 
-    await studiosCollection.deleteMany({});
+    
     const result = await studiosCollection.insertMany(dummyStudios);
     res.status(200).send({
       message: "6 Studios seeded successfully into MongoDB!",
