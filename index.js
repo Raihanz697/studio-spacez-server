@@ -30,7 +30,7 @@ export async function connectToMongoDB() {
 const mongoClient = await connectToMongoDB();
 const db = mongoClient.db("studiospace");
 
-// Collections
+
 const studiosCollection = db.collection("studios");
 const bookingsCollection = db.collection("bookings");
 
@@ -58,14 +58,12 @@ const verifyToken = async (req, res, next) => {
 };
 
 
-// Health check
+
 app.get("/", (req, res) => {
   res.send({ message: "StudioSpace Server is running!" });
 });
 
-// ================= STUDIOS APIS =================
 
-// ১. Shob studios paowa (Explore Studios page)
 app.get("/studios", async (req, res) => {
   try {
     const result = await studiosCollection.find().toArray();
@@ -75,7 +73,6 @@ app.get("/studios", async (req, res) => {
   }
 });
 
-// ২. Specific studio details (Studio Details page & Edit pre-fill)
 app.get("/studios/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -97,7 +94,7 @@ app.get("/studios/:id", async (req, res) => {
   }
 });
 
-// ৩. Notun studio create (Add Studio page)
+
 app.post("/studios", async (req, res) => {
   try {
     const studioData = req.body;
@@ -108,7 +105,7 @@ app.post("/studios", async (req, res) => {
   }
 });
 
-// ৪. Studio Update API (Edit Studio Page er jonno PATCH & PUT)
+
 const handleUpdateStudio = async (req, res) => {
   try {
     const id = req.params.id;
@@ -118,7 +115,7 @@ const handleUpdateStudio = async (req, res) => {
       return res.status(400).send({ message: "Invalid studio ID format" });
     }
 
-    // _id field mongodb te direct update kora jay na tai delete kora holo
+  
     delete updateData._id;
 
     const filter = { _id: new ObjectId(id) };
@@ -145,7 +142,7 @@ const handleUpdateStudio = async (req, res) => {
 app.patch("/studios/:id", handleUpdateStudio);
 app.put("/studios/:id", handleUpdateStudio);
 
-// ৫. হোস্টের ইমেইল দিয়ে নিজস্ব স্টুডিও ফিল্টার করা (My Studio Listings)
+
 app.get("/my-studios", async (req, res) => {
   try {
     const email = req.query.email;
@@ -162,7 +159,7 @@ app.get("/my-studios", async (req, res) => {
   }
 });
 
-// ৬. স্টুডিও ডিলিট করা
+
 app.delete("/studios/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -179,9 +176,7 @@ app.delete("/studios/:id", async (req, res) => {
   }
 });
 
-// ================= BOOKINGS APIS =================
 
-// ৭. User-er booking list paowa (My Bookings page)
 app.get("/bookings", async (req, res) => {
   try {
     const email = req.query.email;
@@ -193,7 +188,7 @@ app.get("/bookings", async (req, res) => {
   }
 });
 
-// ৮. Notun booking save kora
+
 app.post("/bookings", async (req, res) => {
   try {
     const bookingData = req.body;
@@ -204,7 +199,7 @@ app.post("/bookings", async (req, res) => {
   }
 });
 
-// ৯. Booking cancel kora
+
 app.delete("/bookings/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -221,7 +216,7 @@ app.delete("/bookings/:id", async (req, res) => {
   }
 });
 
-// ১০. Seed dummy studios
+
 app.get("/seed-studios", async (req, res) => {
   try {
     const dummyStudios = [
