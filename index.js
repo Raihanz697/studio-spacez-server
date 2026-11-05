@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import { MongoClient, ObjectId } from "mongodb";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -32,6 +33,30 @@ const db = mongoClient.db("studiospace");
 // Collections
 const studiosCollection = db.collection("studios");
 const bookingsCollection = db.collection("bookings");
+
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ msg: "Unauthorized!" });
+  }
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ msg: "Unauthorized!" });
+  }
+
+  const JWKS = createRemoteJWKSet(
+    new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+  );
+
+  try { 
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (error) {
+    return res.status(500).send({ msg: "Server Error!" });
+  }
+};
+
 
 // Health check
 app.get("/", (req, res) => {
