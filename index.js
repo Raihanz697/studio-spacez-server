@@ -50,15 +50,25 @@ app.get("/studios", async (req, res) => {
   }
 });
 
-// ২. Specific studio details (Studio Details page)
+// ২. Specific studio details (Studio Details page & Edit pre-fill)
 app.get("/studios/:id", async (req, res) => {
   try {
     const id = req.params.id;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid studio ID format" });
+    }
+
     const query = { _id: new ObjectId(id) };
     const result = await studiosCollection.findOne(query);
+
+    if (!result) {
+      return res.status(404).send({ message: "Studio not found" });
+    }
+
     res.status(200).send(result);
   } catch (error) {
-    res.status(500).send({ message: "Studio not found" });
+    res.status(500).send({ message: "Studio not found", error: error.message });
   }
 });
 
@@ -73,9 +83,80 @@ app.post("/studios", async (req, res) => {
   }
 });
 
+// ৪. Studio Update API (Edit Studio Page er jonno PATCH & PUT)
+const handleUpdateStudio = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updateData = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid studio ID format" });
+    }
+
+    // _id field mongodb te direct update kora jay na tai delete kora holo
+    delete updateData._id;
+
+    const filter = { _id: new ObjectId(id) };
+    const updatedDoc = {
+      $set: {
+        ...updateData,
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    const result = await studiosCollection.updateOne(filter, updatedDoc);
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ message: "Studio not found to update" });
+    }
+
+    res.status(200).send({ success: true, result });
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).send({ message: "Failed to update studio", error: error.message });
+  }
+};
+
+app.patch("/studios/:id", handleUpdateStudio);
+app.put("/studios/:id", handleUpdateStudio);
+
+// ৫. হোস্টের ইমেইল দিয়ে নিজস্ব স্টুডিও ফিল্টার করা (My Studio Listings)
+app.get("/my-studios", async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).send({ message: "Host email is required" });
+    }
+    const query = {
+      $or: [{ "host.email": email }, { ownerEmail: email }],
+    };
+    const result = await studiosCollection.find(query).toArray();
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to fetch host studios" });
+  }
+});
+
+// ৬. স্টুডিও ডিলিট করা
+app.delete("/studios/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid studio ID" });
+    }
+
+    const query = { _id: new ObjectId(id) };
+    const result = await studiosCollection.deleteOne(query);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to delete studio" });
+  }
+});
+
 // ================= BOOKINGS APIS =================
 
-// ৪. User-er booking list paowa (My Bookings page)
+// ৭. User-er booking list paowa (My Bookings page)
 app.get("/bookings", async (req, res) => {
   try {
     const email = req.query.email;
@@ -87,7 +168,7 @@ app.get("/bookings", async (req, res) => {
   }
 });
 
-// ৫. Notun booking save kora (Reserve Modal theke)[cite: 3]
+// ৮. Notun booking save kora
 app.post("/bookings", async (req, res) => {
   try {
     const bookingData = req.body;
@@ -98,10 +179,15 @@ app.post("/bookings", async (req, res) => {
   }
 });
 
-// ৬. Booking cancel kora (Cancel Modal theke)[cite: 3]
+// ৯. Booking cancel kora
 app.delete("/bookings/:id", async (req, res) => {
   try {
     const id = req.params.id;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid booking ID" });
+    }
+
     const query = { _id: new ObjectId(id) };
     const result = await bookingsCollection.deleteOne(query);
     res.status(200).send(result);
@@ -110,7 +196,7 @@ app.delete("/bookings/:id", async (req, res) => {
   }
 });
 
-
+// ১০. Seed dummy studios
 app.get("/seed-studios", async (req, res) => {
   try {
     const dummyStudios = [
@@ -194,10 +280,7 @@ app.get("/seed-studios", async (req, res) => {
       },
     ];
 
-    // আগের ফাঁকা বা ডুপ্লিকেট পরিষ্কার করতে চাইলে:
     await studiosCollection.deleteMany({});
-    
-    // ৬টি স্টুডিও ইনসার্ট করা
     const result = await studiosCollection.insertMany(dummyStudios);
     res.status(200).send({
       message: "6 Studios seeded successfully into MongoDB!",
