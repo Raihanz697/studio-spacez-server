@@ -314,3 +314,5 @@ app.get("/seed-studios", async (req, res) => {
 app.listen(port, () => {
   console.log(`StudioSpace server listening on port ${port}`);
 });
+
+export default app;
