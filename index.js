@@ -205,7 +205,7 @@ app.post("/bookings", async (req, res) => {
 });
 
 
-app.delete("/bookings/:id", async (req, res) => {
+app.patch("/bookings/:id", async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -213,11 +213,17 @@ app.delete("/bookings/:id", async (req, res) => {
       return res.status(400).send({ message: "Invalid booking ID" });
     }
 
-    const query = { _id: new ObjectId(id) };
-    const result = await bookingsCollection.deleteOne(query);
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $set: {
+        status: req.body.status || "Cancelled",
+      },
+    };
+
+    const result = await bookingsCollection.updateOne(filter, updateDoc);
     res.status(200).send(result);
   } catch (error) {
-    res.status(500).send({ message: "Failed to delete booking" });
+    res.status(500).send({ message: "Failed to update booking status" });
   }
 });
 
